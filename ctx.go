@@ -28,6 +28,7 @@ import (
 	"unsafe"
 
 	"github.com/spacemonkeygo/spacelog"
+	"strings"
 )
 
 var (
@@ -155,8 +156,12 @@ func NewCtxFromFiles(cert_file string, key_file string) (*Ctx, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	key, err := LoadPrivateKeyFromPEM(key_bytes)
+	var key PrivateKey
+	if strings.HasPrefix(string(key_bytes), "-----BEGIN TSS2 PRIVATE KEY-----") {
+		key, err = LoadPrivateKeyFromEngine([]byte(key_file))
+	} else {
+		key, err = LoadPrivateKeyFromPEM(key_bytes)
+	}
 	if err != nil {
 		return nil, err
 	}

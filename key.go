@@ -322,6 +322,23 @@ func LoadPrivateKeyFromPEMWithPassword(pem_block []byte, password string) (
 	return p, nil
 }
 
+func LoadPrivateKeyFromEngine(tss_key_block []byte) (PrivateKey, error) {
+	if len(tss_key_block) == 0 {
+		return nil, errors.New("empty pem block")
+	}
+	engine, err := EngineById("tpm2tss")
+	if err != nil {
+		panic(err)
+	}
+	cstr := (*C.char)(unsafe.Pointer(&tss_key_block[0]))
+	key := C.ENGINE_load_private_key(engine.e, cstr, nil, nil)
+	p := &pKey{key: key}
+	runtime.SetFinalizer(p, func(p *pKey) {
+		C.X_EVP_PKEY_free(p.key)
+	})
+	return p, nil
+}
+
 // LoadPrivateKeyFromDER loads a private key from a DER-encoded block.
 func LoadPrivateKeyFromDER(der_block []byte) (PrivateKey, error) {
 	if len(der_block) == 0 {
